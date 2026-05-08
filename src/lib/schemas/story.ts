@@ -11,7 +11,7 @@ const opcionMultipleSchema = z.object({
     d: z.string().min(1, 'La opción D es obligatoria'),
   }),
   correcta: z.enum(['a', 'b', 'c', 'd'], {
-    errorMap: () => ({ message: 'Debes seleccionar una respuesta correcta' }),
+    message: 'Debes seleccionar una respuesta correcta',
   }),
 })
 
