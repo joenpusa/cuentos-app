@@ -2,6 +2,88 @@ import { LogoutButton } from '@/components/features/auth/LogoutButton'
 import { getSession } from '@/services/auth'
 import Link from 'next/link'
 import { PlusCircle } from 'lucide-react'
+import { Suspense } from 'react'
+import { createClient } from '@/lib/supabase/server'
+import { StoryGrid, StoryGridSkeleton, StoryRow } from '@/components/features/admin/StoryGrid'
+
+async function StoriesList() {
+  const supabase = await createClient()
+
+  // Intentamos obtener todos los datos
+  let { data: rawData, error } = await supabase
+    .from('stories')
+    .select(`
+      *,
+      profiles (
+        email, 
+        role 
+      ),
+      activities ( count )
+    `)
+    .order('created_at', { ascending: false })
+
+  // Fallback si la base de datos aún no tiene 'created_at' o falla
+  if (error) {
+    console.error('Error with full query, trying fallback:', error)
+    const fallback = await supabase
+      .from('stories')
+      .select(`
+        *,
+        activities ( count )
+      `)
+    rawData = fallback.data
+    error = fallback.error
+  }
+
+  if (error) {
+    console.error('Error fetching stories:', error)
+    return <div className="text-red-500 bg-red-50 p-4 rounded-lg">Error cargando los cuentos.</div>
+  }
+
+  const stories: StoryRow[] = (rawData || []).map((row: any) => {
+    // activities ( count ) devuelve un array con un objeto o un número directo dependiendo del entorno
+    let count = 0
+    if (Array.isArray(row.activities) && row.activities.length > 0) {
+      count = row.activities[0].count || 0
+    } else if (row.activities && typeof row.activities === 'object' && 'count' in row.activities) {
+      count = row.activities.count
+    }
+
+    let dateStr = undefined
+    if (row.created_at) {
+      dateStr = new Date(row.created_at).toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      })
+    }
+
+    // Asegurarse de que tenemos la URL pública completa de la imagen
+    let publicImageUrl = row.image_url
+    
+    // Si la url solo contiene el path (ej. 'portadas/mi-imagen.jpg') y no es nula, construimos la pública
+    if (publicImageUrl && !publicImageUrl.startsWith('http')) {
+      const { data } = supabase.storage.from('cuentos-images').getPublicUrl(publicImageUrl)
+      publicImageUrl = data.publicUrl
+    }
+
+    // Supabase devuelve perfiles como un objeto si es una relación uno a uno/muchos a uno
+    const profileEmail = Array.isArray(row.profiles) 
+      ? row.profiles[0]?.email 
+      : row.profiles?.email
+
+    return {
+      id: row.id,
+      title: row.title,
+      image_url: publicImageUrl,
+      created_at: dateStr,
+      author_name: profileEmail,
+      activitiesCount: count,
+    }
+  })
+
+  return <StoryGrid stories={stories} />
+}
 
 export default async function AdminDashboard() {
   const session = await getSession()
@@ -32,18 +114,9 @@ export default async function AdminDashboard() {
           </Link>
         </div>
         
-        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
-          <div className="py-12">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay cuentos recientes</h3>
-            <p className="text-gray-500 mb-6">Comienza creando tu primera historia interactiva.</p>
-            <Link 
-              href="/admin/cuentos/nuevo" 
-              className="text-indigo-600 hover:text-indigo-800 font-semibold"
-            >
-              + Agregar cuento ahora
-            </Link>
-          </div>
-        </div>
+        <Suspense fallback={<StoryGridSkeleton />}>
+          <StoriesList />
+        </Suspense>
       </main>
     </div>
   )
