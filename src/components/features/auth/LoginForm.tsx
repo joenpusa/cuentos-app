@@ -50,7 +50,7 @@ export function LoginForm() {
     <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-indigo-100">
       <div className="flex flex-col items-center mb-8 text-indigo-600">
         <BookOpen size={48} className="mb-4" />
-        <h2 className="text-3xl font-extrabold text-gray-900">Cuentos Mágicos</h2>
+        <h2 className="text-3xl font-extrabold text-gray-900">Escuela en Casa</h2>
         <p className="text-gray-500 mt-2">Inicia sesión en tu cuenta</p>
       </div>
 

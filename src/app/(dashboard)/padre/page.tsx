@@ -1,27 +1,12 @@
-import { LogoutButton } from '@/components/features/auth/LogoutButton'
-import { getSession } from '@/services/auth'
-
 export default async function PadreDashboard() {
-  const session = await getSession()
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm px-8 py-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-indigo-600">Cuentos Mágicos - Padre/Tutor</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600 font-medium">{session?.email}</span>
-          <LogoutButton />
-        </div>
-      </header>
+    <div>
+      <h1 className="text-3xl font-bold text-gray-900 mb-1">Panel de Padres</h1>
+      <p className="text-gray-500 text-sm mb-8">Aquí podrás revisar el progreso de lectura de tus hijos.</p>
 
-      <main className="p-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">Panel de Padres</h2>
-        <p className="text-gray-600 mb-8">Has iniciado sesión correctamente. Aquí podrás revisar el progreso de lectura de tus hijos.</p>
-        
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <p className="text-gray-500 italic">Contenido de las estadísticas en construcción...</p>
-        </div>
-      </main>
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <p className="text-gray-500 italic">Contenido de las estadísticas en construcción...</p>
+      </div>
     </div>
   )
 }

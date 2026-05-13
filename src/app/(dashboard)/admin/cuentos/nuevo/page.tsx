@@ -3,18 +3,18 @@ import { getSession, getUserProfile } from '@/services/auth'
 import { redirect } from 'next/navigation'
 
 export const metadata = {
-  title: 'Nuevo Cuento | Cuentos Mágicos',
+  title: 'Nuevo Cuento | Escuela en Casa',
 }
 
 export default async function NuevoCuentoPage() {
   const session = await getSession()
-  
+
   if (!session) {
     redirect('/login')
   }
 
   const { data: profile } = await getUserProfile(session.id)
-  
+
   if (!profile || profile.role?.trim() !== 'admin') {
     redirect('/')
   }

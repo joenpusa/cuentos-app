@@ -1,5 +1,3 @@
-import { LogoutButton } from '@/components/features/auth/LogoutButton'
-import { getSession } from '@/services/auth'
 import Link from 'next/link'
 import { PlusCircle } from 'lucide-react'
 import { Suspense } from 'react'
@@ -41,7 +39,6 @@ async function StoriesList() {
   }
 
   const stories: StoryRow[] = (rawData || []).map((row: any) => {
-    // activities ( count ) devuelve un array con un objeto o un número directo dependiendo del entorno
     let count = 0
     if (Array.isArray(row.activities) && row.activities.length > 0) {
       count = row.activities[0].count || 0
@@ -58,16 +55,12 @@ async function StoriesList() {
       })
     }
 
-    // Asegurarse de que tenemos la URL pública completa de la imagen
     let publicImageUrl = row.image_url
-    
-    // Si la url solo contiene el path (ej. 'portadas/mi-imagen.jpg') y no es nula, construimos la pública
     if (publicImageUrl && !publicImageUrl.startsWith('http')) {
       const { data } = supabase.storage.from('cuentos-images').getPublicUrl(publicImageUrl)
       publicImageUrl = data.publicUrl
     }
 
-    // Supabase devuelve perfiles como un objeto si es una relación uno a uno/muchos a uno
     const profileEmail = Array.isArray(row.profiles) 
       ? row.profiles[0]?.email 
       : row.profiles?.email
@@ -86,38 +79,27 @@ async function StoriesList() {
 }
 
 export default async function AdminDashboard() {
-  const session = await getSession()
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm px-8 py-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-indigo-600">Cuentos Mágicos - Admin</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600 font-medium">{session?.email}</span>
-          <LogoutButton />
+    <div>
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-1">Historias</h1>
+          <p className="text-gray-500 text-sm">Gestiona el contenido de lectura disponible.</p>
         </div>
-      </header>
 
-      <main className="p-8 max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Panel de Administración</h2>
-            <p className="text-gray-600">Gestiona los cuentos y usuarios desde aquí.</p>
-          </div>
-          
-          <Link 
-            href="/admin/cuentos/nuevo" 
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 transition-colors shadow-md"
-          >
-            <PlusCircle size={20} />
-            Crear Nuevo Cuento
-          </Link>
-        </div>
-        
-        <Suspense fallback={<StoryGridSkeleton />}>
-          <StoriesList />
-        </Suspense>
-      </main>
+        <Link
+          href="/admin/cuentos/nuevo"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-semibold flex items-center gap-2 transition-colors shadow-sm text-sm"
+        >
+          <PlusCircle size={18} />
+          Crear Cuento
+        </Link>
+      </div>
+
+      <Suspense fallback={<StoryGridSkeleton />}>
+        <StoriesList />
+      </Suspense>
     </div>
   )
 }
+
