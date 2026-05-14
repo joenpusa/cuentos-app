@@ -23,3 +23,22 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-anon-key
 SUPABASE_SERVICE_ROLE_KEY=tu-service-role-key
 ```
 
+## Base de Datos (SQL a Ejecutar)
+
+Para que el panel de supervisión de padres funcione, necesitas vincular a los padres con los estudiantes. Ejecuta el siguiente script en el **SQL Editor** de Supabase:
+
+```sql
+-- Añadir la columna parent_id para enlazar a un estudiante con su padre/madre
+ALTER TABLE public.profiles
+ADD COLUMN parent_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL;
+
+-- (Opcional) Índice para optimizar consultas de padres buscando a sus hijos
+CREATE INDEX IF NOT EXISTS idx_profiles_parent_id ON public.profiles(parent_id);
+```
+
+## Validaciones Manuales a Realizar
+
+1. **Vincular Cuentas:** Ve al "Table Editor" en Supabase, abre la tabla `profiles`. Busca el registro de un estudiante y pega en su columna `parent_id` el UUID de un perfil con rol `padre`.
+2. **Dashboard Padre:** Inicia sesión con la cuenta del padre, ve a `/padre/reportes` y verifica que aparezca la lista de sus hijos y puedas ver sus medallas.
+3. **Seguridad:** Intenta acceder a los reportes de un niño con una cuenta de otro estudiante o un padre que no le corresponde; debe mostrar error o no dejarte acceder.
+
