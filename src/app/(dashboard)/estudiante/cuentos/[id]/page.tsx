@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import Image from 'next/image'
 import QuizWizard from '@/components/features/estudiante/QuizWizard'
 import MobileStoryModal from '@/components/features/estudiante/MobileStoryModal'
+import StoryContentViewer from '@/components/features/estudiante/StoryContentViewer'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -55,7 +56,7 @@ export default async function EstudianteCuentoPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 relative">
       <div className="max-w-7xl mx-auto space-y-8">
-        
+
         {/* Header y Portada del Cuento (Full width) */}
         <header className="bg-white rounded-[2rem] shadow-xl overflow-hidden border-4 border-white/50 relative">
           {story.image_url && (
@@ -70,7 +71,7 @@ export default async function EstudianteCuentoPage({ params }: PageProps) {
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
             </div>
           )}
-          
+
           <div className={`p-8 md:p-12 relative ${story.image_url ? '-mt-24 text-white z-10' : 'text-slate-800'}`}>
             <h1 className="text-4xl md:text-6xl font-black mb-4 drop-shadow-md">
               {story.title}
@@ -80,10 +81,8 @@ export default async function EstudianteCuentoPage({ params }: PageProps) {
 
         <div className="lg:grid lg:grid-cols-2 lg:gap-8 items-start">
           {/* Columna Izquierda: Cuento (Solo Escritorio/Tablet) */}
-          <article className="hidden lg:block bg-white p-8 md:p-12 rounded-[2rem] shadow-xl text-lg lg:text-xl text-slate-700 leading-relaxed space-y-6 lg:sticky lg:top-8 h-auto max-h-[85vh] overflow-y-auto custom-scrollbar">
-            {story.content.split('\n').map((paragraph: string, idx: number) => (
-              paragraph.trim() ? <p key={idx}>{paragraph}</p> : <br key={idx} />
-            ))}
+          <article className="hidden lg:block bg-white p-8 md:p-12 rounded-[2rem] shadow-xl lg:sticky lg:top-8 h-auto max-h-[85vh] overflow-y-auto custom-scrollbar">
+            <StoryContentViewer content={story.content} className="text-lg lg:text-xl text-slate-700 leading-relaxed space-y-6" />
           </article>
 
           {/* Columna Derecha: Cuestionario */}
@@ -100,18 +99,9 @@ export default async function EstudianteCuentoPage({ params }: PageProps) {
               </div>
             ) : (
               <div className="space-y-8">
-                <div className="text-center lg:text-left pl-4">
-                  <h2 className="text-3xl md:text-4xl font-black text-slate-800 mb-4">
-                    ¡Hora de Jugar! 🎮
-                  </h2>
-                  <p className="text-lg text-slate-600 font-medium">
-                    Demuestra lo que aprendiste y gana medallas.
-                  </p>
-                </div>
-                
-                <QuizWizard 
-                  questions={story.questions || []} 
-                  storyId={story.id} 
+                <QuizWizard
+                  questions={story.questions || []}
+                  storyId={story.id}
                 />
               </div>
             )}

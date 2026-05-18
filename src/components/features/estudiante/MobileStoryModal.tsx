@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import StoryContentViewer from '@/components/features/estudiante/StoryContentViewer'
 
 interface MobileStoryModalProps {
   title: string
@@ -40,10 +41,8 @@ export default function MobileStoryModal({ title, content }: MobileStoryModalPro
             </div>
             
             {/* Contenido del Modal (Scrollable) */}
-            <div className="p-6 overflow-y-auto flex-1 text-lg text-slate-700 leading-relaxed space-y-4">
-              {content.split('\n').map((paragraph, idx) => (
-                paragraph.trim() ? <p key={idx}>{paragraph}</p> : <br key={idx} />
-              ))}
+            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
+              <StoryContentViewer content={content} className="text-lg text-slate-700 leading-relaxed space-y-4" />
             </div>
           </div>
         </div>
