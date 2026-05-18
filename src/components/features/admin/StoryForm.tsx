@@ -5,6 +5,7 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { storySchema, StoryFormValues } from '@/lib/schemas/story'
 import { createStory } from '@/app/(dashboard)/admin/cuentos/nuevo/actions'
+import { updateStory } from '@/app/(dashboard)/admin/cuentos/editar/[id]/actions'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { Loader2, Plus, Trash2, Image as ImageIcon } from 'lucide-react'
@@ -14,10 +15,15 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 
-export function StoryForm() {
+interface StoryFormProps {
+  initialData?: StoryFormValues & { image_url?: string | null }
+  storyId?: string
+}
+
+export function StoryForm({ initialData, storyId }: StoryFormProps = {}) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(initialData?.image_url || null)
   const [imageFile, setImageFile] = useState<File | null>(null)
 
   const {
@@ -29,7 +35,7 @@ export function StoryForm() {
     formState: { errors },
   } = useForm<StoryFormValues>({
     resolver: zodResolver(storySchema),
-    defaultValues: {
+    defaultValues: initialData || {
       title: '',
       content: '',
       questions: [],
@@ -48,7 +54,7 @@ export function StoryForm() {
         placeholder: 'Escribe el contenido del cuento aquí...',
       }),
     ],
-    content: '',
+    content: initialData?.content || '',
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
       let html = editor.getHTML()
@@ -85,16 +91,22 @@ export function StoryForm() {
         formData.append('image', imageFile)
       }
 
-      toast.loading('Guardando cuento y subiendo imagen...', { id: 'save-story' })
+      toast.loading(storyId ? 'Actualizando cuento...' : 'Guardando cuento y subiendo imagen...', { id: 'save-story' })
       
-      const result = await createStory(formData)
+      let result;
+      if (storyId) {
+        formData.append('id', storyId)
+        result = await updateStory(formData)
+      } else {
+        result = await createStory(formData)
+      }
 
       if (result?.error) {
         toast.error(result.error, { id: 'save-story' })
       } else if (result?.fields) {
         toast.error('Revisa los campos del formulario', { id: 'save-story' })
       } else {
-        toast.success('¡Cuento guardado correctamente!', { id: 'save-story' })
+        toast.success(storyId ? '¡Cuento actualizado correctamente!' : '¡Cuento guardado correctamente!', { id: 'save-story' })
         router.push('/admin')
       }
     })
