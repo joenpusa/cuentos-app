@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Image from 'next/image'
-import QuizWizard from '@/components/features/estudiante/QuizWizard'
+import QuizContainer from '@/components/features/estudiante/QuizContainer'
 import MobileStoryModal from '@/components/features/estudiante/MobileStoryModal'
 import StoryContentViewer from '@/components/features/estudiante/StoryContentViewer'
 
@@ -53,6 +53,16 @@ export default async function EstudianteCuentoPage({ params }: PageProps) {
   const maxAttempts = 2
   const hasReachedLimit = attempts >= maxAttempts
 
+  // 4. Obtener el último intento (si existe)
+  const { data: latestActivity } = await supabase
+    .from('activities')
+    .select('score, responses')
+    .eq('student_id', user.id)
+    .eq('story_id', id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 relative">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -85,26 +95,15 @@ export default async function EstudianteCuentoPage({ params }: PageProps) {
             <StoryContentViewer content={story.content} className="text-lg lg:text-xl text-slate-700 leading-relaxed space-y-6" />
           </article>
 
-          {/* Columna Derecha: Cuestionario */}
+          {/* Columna Derecha: Cuestionario / Revisión */}
           <section className="scroll-mt-12" id="cuestionario">
-            {hasReachedLimit ? (
-              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[2rem] shadow-xl p-8 md:p-12 text-center text-white">
-                <div className="text-6xl mb-6">🏆</div>
-                <h2 className="text-3xl md:text-4xl font-black mb-4">
-                  ¡Ya eres un experto en este cuento!
-                </h2>
-                <p className="text-xl md:text-2xl text-indigo-100 font-medium max-w-2xl mx-auto">
-                  Has completado este cuento {attempts} veces. Intenta leer uno nuevo para seguir ganando medallas y aprendiendo.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-8">
-                <QuizWizard
-                  questions={story.questions || []}
-                  storyId={story.id}
-                />
-              </div>
-            )}
+            <QuizContainer
+              questions={story.questions || []}
+              storyId={story.id}
+              attempts={attempts}
+              maxAttempts={maxAttempts}
+              latestActivity={latestActivity}
+            />
           </section>
         </div>
       </div>

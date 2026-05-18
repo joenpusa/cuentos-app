@@ -2,9 +2,16 @@ import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 
+import { CheckCircle2, Medal } from 'lucide-react'
+
 async function StoriesList() {
   const supabase = await createClient()
 
+  // Obtener usuario actual
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  // Obtener cuentos
   const { data: stories, error } = await supabase
     .from('stories')
     .select('*')
@@ -13,6 +20,26 @@ async function StoriesList() {
   if (error) {
     console.error('Error fetching stories for student:', error)
     return <div className="text-red-500 bg-red-50 p-4 rounded-lg">Error cargando los cuentos.</div>
+  }
+
+  // Obtener todas las actividades del estudiante ordenadas por fecha descendente
+  const { data: activities } = await supabase
+    .from('activities')
+    .select('story_id, score, created_at')
+    .eq('student_id', user.id)
+    .order('created_at', { ascending: false })
+
+  // Agrupar actividades para obtener la más reciente de cada cuento
+  const latestActivityByStory = new Map<string, { score: number, attempts: number }>()
+  
+  if (activities) {
+    for (const activity of activities) {
+      if (!latestActivityByStory.has(activity.story_id)) {
+        latestActivityByStory.set(activity.story_id, { score: activity.score, attempts: 1 })
+      } else {
+        latestActivityByStory.get(activity.story_id)!.attempts += 1
+      }
+    }
   }
 
   if (!stories || stories.length === 0) {
@@ -32,8 +59,21 @@ async function StoriesList() {
           publicImageUrl = data.publicUrl
         }
 
+        const activityInfo = latestActivityByStory.get(story.id)
+        const isCompleted = activityInfo !== undefined
+        const maxScore = 5 // Asumiendo 5 como máximo en la lógica actual
+
         return (
-          <div key={story.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+          <div key={story.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col hover:shadow-md transition-all relative">
+            
+            {/* Badge de Completado */}
+            {isCompleted && (
+              <div className="absolute top-3 right-3 z-10 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 shadow-md">
+                <CheckCircle2 className="w-4 h-4" />
+                Leído
+              </div>
+            )}
+
             <div className="relative h-48 w-full bg-indigo-50">
               {publicImageUrl ? (
                 <img 
@@ -46,15 +86,31 @@ async function StoriesList() {
                   <span className="text-4xl">📚</span>
                 </div>
               )}
+              {isCompleted && (
+                <div className="absolute inset-0 bg-black/10"></div>
+              )}
             </div>
+            
             <div className="p-5 flex flex-col flex-grow">
               <h3 className="font-bold text-xl text-gray-900 mb-2 line-clamp-2">{story.title}</h3>
+              
+              {isCompleted && activityInfo && (
+                <div className="flex items-center gap-2 mt-1 mb-3 bg-yellow-50 text-yellow-700 px-3 py-2 rounded-lg font-medium text-sm w-fit border border-yellow-200">
+                  <Medal className="w-4 h-4 text-yellow-500" />
+                  <span>Último puntaje: {activityInfo.score}/{maxScore}</span>
+                </div>
+              )}
+
               <div className="mt-auto pt-4">
                 <Link 
                   href={`/estudiante/cuentos/${story.id}`}
-                  className="block w-full py-2.5 px-4 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl text-center transition-colors shadow-sm"
+                  className={`block w-full py-2.5 px-4 font-bold rounded-xl text-center transition-colors shadow-sm ${
+                    isCompleted 
+                      ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700 border border-emerald-200' 
+                      : 'bg-indigo-500 hover:bg-indigo-600 text-white'
+                  }`}
                 >
-                  ¡Comenzar a leer!
+                  {isCompleted ? 'Volver a ver' : '¡Comenzar a leer!'}
                 </Link>
               </div>
             </div>
