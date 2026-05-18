@@ -12,6 +12,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   GraduationCap,
+  BarChart2,
   LogOut,
   Menu,
   X,
@@ -59,6 +60,19 @@ export function Sidebar({ role, userEmail }: SidebarProps) {
           href: '/admin',
           icon: <BookOpen size={16} />,
           roles: ['admin', 'estudiante', 'padre'],
+        },
+      ],
+    },
+    {
+      label: 'Reportes',
+      icon: <BarChart2 size={20} />,
+      roles: ['admin', 'padre'],
+      children: [
+        {
+          label: 'Progreso',
+          href: '/reportes',
+          icon: <BarChart2 size={16} />,
+          roles: ['admin', 'padre'],
         },
       ],
     },
