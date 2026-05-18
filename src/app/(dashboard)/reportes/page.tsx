@@ -33,7 +33,7 @@ export default async function ReportesPage({ searchParams }: PageProps) {
   const isAdmin = profile.role === 'admin'
 
   // 2. Obtener lista de estudiantes según el rol
-  let query = supabase.from('profiles').select('id, email, role')
+  let query = supabase.from('profiles').select('id, full_name, role')
   
   if (isAdmin) {
     query = query.eq('role', 'estudiante')
@@ -98,7 +98,7 @@ export default async function ReportesPage({ searchParams }: PageProps) {
           {selectedChild ? (
             <div>
               <h2 className="text-2xl font-black text-slate-800 mb-8 text-center sm:text-left">
-                Reporte de {selectedChild.email?.split('@')[0] || 'Estudiante'}
+                Reporte de {selectedChild.full_name || 'Estudiante'}
               </h2>
               
               {/* Suspense boundary for data fetching */}

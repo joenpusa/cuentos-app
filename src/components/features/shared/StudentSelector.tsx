@@ -6,7 +6,7 @@ import { Search } from 'lucide-react'
 
 interface Student {
   id: string
-  email: string | null
+  full_name: string | null
 }
 
 interface StudentSelectorProps {
@@ -20,10 +20,9 @@ export default function StudentSelector({ students, selectedId, showSearch = fal
   const searchParams = useSearchParams()
   const [searchTerm, setSearchTerm] = useState('')
 
-  const filteredStudents = students.filter(student => {
-    const displayName = student.email ? student.email.split('@')[0] : 'Sin Nombre'
-    return displayName.toLowerCase().includes(searchTerm.toLowerCase())
-  })
+  const filteredStudents = students.filter(student => 
+    (student.full_name || 'Sin Nombre').toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   const handleSelect = (id: string) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -60,7 +59,7 @@ export default function StudentSelector({ students, selectedId, showSearch = fal
               {filteredStudents.length > 0 ? (
                 filteredStudents.map(student => (
                   <option key={student.id} value={student.id}>
-                    {student.email ? student.email.split('@')[0] : 'Sin Nombre'}
+                    {student.full_name || 'Sin Nombre'}
                   </option>
                 ))
               ) : (
@@ -83,7 +82,7 @@ export default function StudentSelector({ students, selectedId, showSearch = fal
                       }
                     `}
                   >
-                    {child.email ? child.email.split('@')[0] : 'Sin Nombre'}
+                    {child.full_name || 'Sin Nombre'}
                   </button>
                 )
               })}

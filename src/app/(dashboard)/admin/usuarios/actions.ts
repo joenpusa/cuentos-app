@@ -57,16 +57,17 @@ export async function createUser(formData: FormData) {
 
     const userId = authData.user.id
 
+    const parent_id = formData.get('parent_id') as string
+
     // 2. Insertar en profiles
-    // Intentamos insertarlo manualmente (aunque puede haber un trigger en la BD, si lo hay, esto podría fallar o podríamos usar upsert)
     const { error: profileError } = await adminClient
       .from('profiles')
       .upsert({
         id: userId,
         role: role,
-        // Dependiendo de la estructura de tu BD, full_name o email podrían guardarse aquí también
-        // full_name: name,
-        // email: email
+        full_name: name,
+        email: email,
+        parent_id: (role === 'estudiante' && parent_id) ? parent_id : null
       })
 
     if (profileError) {
