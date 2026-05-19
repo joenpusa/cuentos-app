@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getUserProfile } from '@/services/auth'
 
 export interface ProgressSummary {
@@ -55,12 +56,11 @@ export async function getStudentProgress(studentId: string): Promise<ProgressSum
   }
 
   // 2. Fetch Data
-  
+
+  const adminClient = createAdminClient()
+
   // Total Medals
-  // En Supabase, para hacer SUM, podemos hacer rpc o traer todo y sumar.
-  // Como aún no hemos creado un RPC, usaremos .select('score') y sumaremos en JS
-  // Para evitar cargar todo a memoria, si son miles podría ser un problema, pero por ahora está bien.
-  const { data: allActivities, error: activitiesError } = await supabase
+  const { data: allActivities, error: activitiesError } = await adminClient
     .from('activities')
     .select('score, story_id')
     .eq('student_id', studentId)
@@ -80,7 +80,7 @@ export async function getStudentProgress(studentId: string): Promise<ProgressSum
   }
 
   // Recent History (últimos 5)
-  const { data: recent, error: recentError } = await supabase
+  const { data: recent, error: recentError } = await adminClient
     .from('activities')
     .select(`
       id, 
