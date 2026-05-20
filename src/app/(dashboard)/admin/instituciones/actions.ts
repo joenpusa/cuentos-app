@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
 // --- HELPER DE AUTORIZACIÓN ---
@@ -100,6 +101,35 @@ export async function updateInstitution(id: string, formData: FormData) {
     return { success: true }
   } catch (error: any) {
     console.error('Exception in updateInstitution:', error)
+    return { error: error.message || 'Error desconocido' }
+  }
+}
+
+// --- VINCULAR ESTUDIANTE A INSTITUCIÓN ---
+export async function linkStudentToInstitution(studentId: string, institutionId: string) {
+  try {
+    await requireAdmin()
+
+    if (!studentId || !institutionId) {
+      return { error: 'Se requieren tanto el estudiante como la institución' }
+    }
+
+    const adminClient = createAdminClient()
+
+    const { error: updateError } = await adminClient
+      .from('profiles')
+      .update({ institution_id: institutionId })
+      .eq('id', studentId)
+
+    if (updateError) {
+      console.error('Error linking student:', updateError)
+      return { error: `Error al vincular el estudiante: ${updateError.message}` }
+    }
+
+    revalidatePath(`/admin/instituciones/${institutionId}`)
+    return { success: true }
+  } catch (error: any) {
+    console.error('Exception in linkStudentToInstitution:', error)
     return { error: error.message || 'Error desconocido' }
   }
 }

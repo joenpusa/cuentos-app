@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import InstitutionForm from '@/components/features/admin/InstitutionForm'
 
 interface InstitutionData {
@@ -77,7 +78,13 @@ export default function InstitutionsClient({ institutions }: InstitutionsClientP
                     <td className="p-5 text-slate-500 text-sm hidden md:table-cell">
                       {new Date(inst.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </td>
-                    <td className="p-5 text-right">
+                    <td className="p-5 text-right flex justify-end gap-2">
+                      <Link
+                        href={`/admin/instituciones/${inst.id}`}
+                        className="text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 px-3 py-1.5 rounded-lg font-medium transition-colors"
+                      >
+                        Ver Detalles
+                      </Link>
                       <button
                         onClick={() => openEditModal(inst)}
                         className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-3 py-1.5 rounded-lg font-medium transition-colors"
