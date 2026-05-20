@@ -16,6 +16,7 @@ import {
   LogOut,
   Menu,
   X,
+  Building,
 } from 'lucide-react'
 import { logout } from '@/app/(auth)/login/actions'
 
@@ -83,6 +84,12 @@ export function Sidebar({ role, userEmail }: SidebarProps) {
       label: 'Usuarios',
       href: '/admin/usuarios',
       icon: <Users size={20} />,
+      roles: ['admin'],
+    },
+    {
+      label: 'Instituciones',
+      href: '/admin/instituciones',
+      icon: <Building size={20} />,
       roles: ['admin'],
     },
   ]
