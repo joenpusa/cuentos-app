@@ -9,6 +9,7 @@ interface UserData {
   name: string
   email: string
   role: string
+  parent_id?: string | null
   created_at: string
 }
 
@@ -18,10 +19,22 @@ interface UsersClientProps {
 
 export default function UsersClient({ users }: UsersClientProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState<UserData | null>(null)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
 
   const handleSuccess = () => {
     setIsModalOpen(false)
+    setEditingUser(null)
+  }
+
+  const openCreateModal = () => {
+    setEditingUser(null)
+    setIsModalOpen(true)
+  }
+
+  const openEditModal = (user: UserData) => {
+    setEditingUser(user)
+    setIsModalOpen(true)
   }
 
   const handleDelete = async (id: string, name: string) => {
@@ -46,6 +59,10 @@ export default function UsersClient({ users }: UsersClientProps) {
     switch (role) {
       case 'admin':
         return <span className="px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-xs font-bold uppercase tracking-wider">Admin</span>
+      case 'director':
+        return <span className="px-3 py-1 bg-fuchsia-100 text-fuchsia-700 rounded-full text-xs font-bold uppercase tracking-wider">Director</span>
+      case 'profesor':
+        return <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold uppercase tracking-wider">Profesor</span>
       case 'padre':
         return <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase tracking-wider">Padre</span>
       case 'estudiante':
@@ -63,7 +80,7 @@ export default function UsersClient({ users }: UsersClientProps) {
           <p className="text-slate-500">Gestiona los perfiles de la familia en Escuela en Casa.</p>
         </div>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={openCreateModal}
           className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-indigo-300 transition-all active:scale-95"
         >
           + Añadir Miembro
@@ -99,7 +116,13 @@ export default function UsersClient({ users }: UsersClientProps) {
                     <td className="p-5 text-slate-500 text-sm hidden md:table-cell">
                       {new Date(user.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </td>
-                    <td className="p-5 text-right">
+                    <td className="p-5 text-right flex justify-end gap-2">
+                      <button
+                        onClick={() => openEditModal(user)}
+                        className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-3 py-1.5 rounded-lg font-medium transition-colors"
+                      >
+                        Editar
+                      </button>
                       <button
                         onClick={() => handleDelete(user.id, user.name)}
                         disabled={isDeleting === user.id}
@@ -122,9 +145,14 @@ export default function UsersClient({ users }: UsersClientProps) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md p-8 transform scale-100 slide-in-from-bottom-8">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-black text-slate-800">Nuevo Miembro</h2>
+              <h2 className="text-2xl font-black text-slate-800">
+                {editingUser ? 'Editar Miembro' : 'Nuevo Miembro'}
+              </h2>
               <button
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => {
+                  setIsModalOpen(false)
+                  setEditingUser(null)
+                }}
                 className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold hover:bg-slate-200 transition-colors"
               >
                 ✕
@@ -132,8 +160,12 @@ export default function UsersClient({ users }: UsersClientProps) {
             </div>
             
             <UserForm 
+              initialData={editingUser}
               onSuccess={handleSuccess} 
-              onCancel={() => setIsModalOpen(false)} 
+              onCancel={() => {
+                setIsModalOpen(false)
+                setEditingUser(null)
+              }} 
             />
           </div>
         </div>

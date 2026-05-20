@@ -1,10 +1,20 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createUser } from '@/app/(dashboard)/admin/usuarios/actions'
+import { createUser, updateUser } from '@/app/(dashboard)/admin/usuarios/actions'
 import { createClient } from '@/lib/supabase/client'
 
+export interface UserData {
+  id: string
+  name: string
+  email: string
+  role: string
+  parent_id?: string | null
+  created_at?: string
+}
+
 interface UserFormProps {
+  initialData?: UserData | null
   onSuccess: () => void
   onCancel: () => void
 }
@@ -15,11 +25,11 @@ interface Parent {
   email: string | null
 }
 
-export default function UserForm({ onSuccess, onCancel }: UserFormProps) {
+export default function UserForm({ initialData, onSuccess, onCancel }: UserFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
-  const [selectedRole, setSelectedRole] = useState('')
+  const [selectedRole, setSelectedRole] = useState(initialData?.role || '')
   const [parents, setParents] = useState<Parent[]>([])
   const [isLoadingParents, setIsLoadingParents] = useState(false)
 
@@ -51,14 +61,17 @@ export default function UserForm({ onSuccess, onCancel }: UserFormProps) {
     const formData = new FormData(e.currentTarget)
 
     try {
-      const result = await createUser(formData)
+      const result = initialData
+        ? await updateUser(initialData.id, formData)
+        : await createUser(formData)
+
       if (result.error) {
         setError(result.error)
       } else if (result.success) {
         onSuccess()
       }
     } catch (err) {
-      setError('Error inesperado al crear el usuario')
+      setError('Error inesperado al guardar el usuario')
     } finally {
       setIsSubmitting(false)
     }
@@ -81,6 +94,7 @@ export default function UserForm({ onSuccess, onCancel }: UserFormProps) {
           id="name"
           name="name"
           required
+          defaultValue={initialData?.name}
           className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
           placeholder="Ej: Juan Pérez"
         />
@@ -95,6 +109,7 @@ export default function UserForm({ onSuccess, onCancel }: UserFormProps) {
           id="email"
           name="email"
           required
+          defaultValue={initialData?.email}
           className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
           placeholder="juan@ejemplo.com"
         />
@@ -102,16 +117,16 @@ export default function UserForm({ onSuccess, onCancel }: UserFormProps) {
 
       <div>
         <label htmlFor="password" className="block text-sm font-semibold text-slate-700 mb-1">
-          Contraseña
+          Contraseña {initialData && <span className="text-slate-400 font-normal">(Opcional)</span>}
         </label>
         <input
           type="password"
           id="password"
           name="password"
-          required
+          required={!initialData}
           minLength={6}
           className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-          placeholder="Mínimo 6 caracteres"
+          placeholder={initialData ? "Dejar en blanco para no cambiar" : "Mínimo 6 caracteres"}
         />
       </div>
 
@@ -130,6 +145,8 @@ export default function UserForm({ onSuccess, onCancel }: UserFormProps) {
           <option value="">Selecciona un rol...</option>
           <option value="estudiante">Estudiante</option>
           <option value="padre">Padre</option>
+          <option value="profesor">Profesor</option>
+          <option value="director">Director</option>
           <option value="admin">Administrador</option>
         </select>
       </div>
@@ -143,6 +160,7 @@ export default function UserForm({ onSuccess, onCancel }: UserFormProps) {
             id="parent_id"
             name="parent_id"
             disabled={isLoadingParents}
+            defaultValue={initialData?.parent_id || ''}
             className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white transition-all cursor-pointer disabled:bg-slate-50 disabled:text-slate-400"
           >
             <option value="">
@@ -171,7 +189,7 @@ export default function UserForm({ onSuccess, onCancel }: UserFormProps) {
           disabled={isSubmitting}
           className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
         >
-          {isSubmitting ? 'Guardando...' : 'Crear Miembro'}
+          {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Crear Miembro')}
         </button>
       </div>
     </form>

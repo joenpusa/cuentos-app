@@ -62,6 +62,7 @@ export default async function UsuariosAdminPage() {
       name,
       email: u.email || 'Sin email',
       role,
+      parent_id: prof?.parent_id || null,
       created_at: u.created_at,
     }
   }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())

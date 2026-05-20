@@ -122,3 +122,67 @@ export async function deleteUser(userId: string) {
     return { error: error.message || 'Error desconocido' }
   }
 }
+
+// --- ACTUALIZAR USUARIO ---
+export async function updateUser(userId: string, formData: FormData) {
+  try {
+    await requireAdmin()
+
+    const name = formData.get('name') as string
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+    const role = formData.get('role') as string
+    const parent_id = formData.get('parent_id') as string
+
+    if (!name || !email || !role) {
+      return { error: 'Nombre, email y rol son obligatorios' }
+    }
+
+    const adminClient = createAdminClient()
+
+    // 1. Actualizar usuario en Auth
+    const authUpdatePayload: any = {
+      email,
+      user_metadata: {
+        full_name: name
+      }
+    }
+    
+    // Solo actualizar contraseña si se proporcionó una nueva
+    if (password && password.trim() !== '') {
+      authUpdatePayload.password = password
+    }
+
+    const { error: authError } = await adminClient.auth.admin.updateUserById(
+      userId,
+      authUpdatePayload
+    )
+
+    if (authError) {
+      console.error('Error updating auth user:', authError)
+      return { error: `Error al actualizar usuario en Auth: ${authError.message}` }
+    }
+
+    // 2. Actualizar en profiles
+    const { error: profileError } = await adminClient
+      .from('profiles')
+      .update({
+        role: role,
+        full_name: name,
+        email: email,
+        parent_id: (role === 'estudiante' && parent_id) ? parent_id : null
+      })
+      .eq('id', userId)
+
+    if (profileError) {
+      console.error('Error updating profile:', profileError)
+      return { error: 'Error al actualizar el perfil del usuario' }
+    }
+
+    revalidatePath('/admin/usuarios')
+    return { success: true }
+  } catch (error: any) {
+    console.error('Exception in updateUser:', error)
+    return { error: error.message || 'Error desconocido' }
+  }
+}
