@@ -59,6 +59,12 @@ export async function login(prevState: any, formData: FormData) {
     case 'padre':
       redirect('/padre')
       break
+    case 'director':
+      redirect('/director')
+      break
+    case 'profesor':
+      redirect('/profesor')
+      break
     default:
       redirect('/')
   }

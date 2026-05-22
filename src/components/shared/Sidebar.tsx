@@ -17,6 +17,7 @@ import {
   Menu,
   X,
   Building,
+  School,
 } from 'lucide-react'
 import { logout } from '@/app/(auth)/login/actions'
 
@@ -91,6 +92,15 @@ export function Sidebar({ role, userEmail }: SidebarProps) {
       href: '/admin/instituciones',
       icon: <Building size={20} />,
       roles: ['admin'],
+    },
+  ]
+
+  const directorItems = [
+    {
+      label: 'Mis Cursos',
+      href: '/director/cursos',
+      icon: <School size={20} />,
+      roles: ['director'],
     },
   ]
 
@@ -208,6 +218,40 @@ export function Sidebar({ role, userEmail }: SidebarProps) {
 
         {/* Items de Admin */}
         {adminItems
+          .filter((item) => item.roles.includes(role))
+          .map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setMobileOpen(false)}
+              title={collapsed ? item.label : undefined}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+                collapsed ? 'justify-center' : ''
+              } ${
+                isActive(item.href)
+                  ? 'bg-white text-indigo-700 font-semibold shadow-sm'
+                  : 'text-white/80 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <span className="flex-shrink-0">{item.icon}</span>
+              <AnimatePresence>
+                {!collapsed && (
+                  <motion.span
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: 'auto' }}
+                    exit={{ opacity: 0, width: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="text-sm font-medium whitespace-nowrap overflow-hidden"
+                  >
+                    {item.label}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </Link>
+          ))}
+
+        {/* Items de Director */}
+        {directorItems
           .filter((item) => item.roles.includes(role))
           .map((item) => (
             <Link
