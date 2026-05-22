@@ -13,11 +13,19 @@ interface UserData {
   created_at: string
 }
 
-interface UsersClientProps {
-  users: UserData[]
+interface Parent {
+  id: string
+  full_name: string | null
+  email: string | null
 }
 
-export default function UsersClient({ users }: UsersClientProps) {
+interface UsersClientProps {
+  users: UserData[]
+  isDirector?: boolean
+  parents: Parent[]
+}
+
+export default function UsersClient({ users, isDirector, parents }: UsersClientProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<UserData | null>(null)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
@@ -77,7 +85,7 @@ export default function UsersClient({ users }: UsersClientProps) {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-800">Usuarios</h1>
-          <p className="text-slate-500">Gestiona los perfiles de la familia en Escuela en Casa.</p>
+          <p className="text-slate-500">Gestiona los perfiles de la institucion.</p>
         </div>
         <button
           onClick={openCreateModal}
@@ -158,14 +166,16 @@ export default function UsersClient({ users }: UsersClientProps) {
                 ✕
               </button>
             </div>
-            
-            <UserForm 
+
+            <UserForm
               initialData={editingUser}
-              onSuccess={handleSuccess} 
+              isDirector={isDirector}
+              parents={parents}
+              onSuccess={handleSuccess}
               onCancel={() => {
                 setIsModalOpen(false)
                 setEditingUser(null)
-              }} 
+              }}
             />
           </div>
         </div>

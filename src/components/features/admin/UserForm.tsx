@@ -13,45 +13,25 @@ export interface UserData {
   created_at?: string
 }
 
-interface UserFormProps {
-  initialData?: UserData | null
-  onSuccess: () => void
-  onCancel: () => void
-}
-
 interface Parent {
   id: string
   full_name: string | null
   email: string | null
 }
 
-export default function UserForm({ initialData, onSuccess, onCancel }: UserFormProps) {
+interface UserFormProps {
+  initialData?: UserData | null
+  isDirector?: boolean
+  parents: Parent[]
+  onSuccess: () => void
+  onCancel: () => void
+}
+
+export default function UserForm({ initialData, isDirector, parents, onSuccess, onCancel }: UserFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
   const [selectedRole, setSelectedRole] = useState(initialData?.role || '')
-  const [parents, setParents] = useState<Parent[]>([])
-  const [isLoadingParents, setIsLoadingParents] = useState(false)
-
-  useEffect(() => {
-    async function fetchParents() {
-      setIsLoadingParents(true)
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .eq('role', 'padre')
-        
-      if (!error && data) {
-        setParents(data)
-      }
-      setIsLoadingParents(false)
-    }
-
-    if (selectedRole === 'estudiante') {
-      fetchParents()
-    }
-  }, [selectedRole])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -146,8 +126,12 @@ export default function UserForm({ initialData, onSuccess, onCancel }: UserFormP
           <option value="estudiante">Estudiante</option>
           <option value="padre">Padre</option>
           <option value="profesor">Profesor</option>
-          <option value="director">Director</option>
-          <option value="admin">Administrador</option>
+          {!isDirector && (
+            <>
+              <option value="director">Director</option>
+              <option value="admin">Administrador</option>
+            </>
+          )}
         </select>
       </div>
 
@@ -159,13 +143,10 @@ export default function UserForm({ initialData, onSuccess, onCancel }: UserFormP
           <select
             id="parent_id"
             name="parent_id"
-            disabled={isLoadingParents}
             defaultValue={initialData?.parent_id || ''}
-            className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white transition-all cursor-pointer disabled:bg-slate-50 disabled:text-slate-400"
+            className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white transition-all cursor-pointer"
           >
-            <option value="">
-              {isLoadingParents ? 'Cargando padres...' : 'Ninguno (Sin asignar)'}
-            </option>
+            <option value="">Ninguno (Sin asignar)</option>
             {parents.map(p => (
               <option key={p.id} value={p.id}>
                 {p.full_name || p.email?.split('@')[0] || 'Padre sin nombre'}

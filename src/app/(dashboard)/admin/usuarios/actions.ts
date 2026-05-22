@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
 // --- HELPER DE AUTORIZACIÓN ---
-async function requireAdmin() {
+async function requireAdminOrDirector() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   
@@ -17,17 +17,31 @@ async function requireAdmin() {
     .eq('id', user.id)
     .single()
 
-  if (!profile || profile.role !== 'admin') {
+  if (!profile || (profile.role !== 'admin' && profile.role !== 'director')) {
     throw new Error('No autorizado')
   }
 
-  return user
+  let institutionId = null
+  if (profile.role === 'director') {
+    const { data: institution } = await supabase
+      .from('institutions')
+      .select('id')
+      .eq('director_id', user.id)
+      .single()
+      
+    if (!institution) {
+      throw new Error('No tienes una institución asignada')
+    }
+    institutionId = institution.id
+  }
+
+  return { user, role: profile.role, institutionId }
 }
 
 // --- CREAR USUARIO ---
 export async function createUser(formData: FormData) {
   try {
-    await requireAdmin()
+    const { role: currentUserRole, institutionId } = await requireAdminOrDirector()
 
     const name = formData.get('name') as string
     const email = formData.get('email') as string
@@ -36,6 +50,11 @@ export async function createUser(formData: FormData) {
 
     if (!name || !email || !password || !role) {
       return { error: 'Todos los campos son obligatorios' }
+    }
+
+    // Restricciones para directores
+    if (currentUserRole === 'director' && (role === 'admin' || role === 'director')) {
+      return { error: 'Los directores no pueden crear administradores ni otros directores' }
     }
 
     const adminClient = createAdminClient()
@@ -67,7 +86,8 @@ export async function createUser(formData: FormData) {
         role: role,
         full_name: name,
         email: email,
-        parent_id: (role === 'estudiante' && parent_id) ? parent_id : null
+        parent_id: (role === 'estudiante' && parent_id) ? parent_id : null,
+        institution_id: currentUserRole === 'director' ? institutionId : null
       })
 
     if (profileError) {
@@ -78,6 +98,7 @@ export async function createUser(formData: FormData) {
     }
 
     revalidatePath('/admin/usuarios')
+    revalidatePath('/director/usuarios')
     return { success: true }
   } catch (error: any) {
     console.error('Exception in createUser:', error)
@@ -88,13 +109,26 @@ export async function createUser(formData: FormData) {
 // --- ELIMINAR USUARIO ---
 export async function deleteUser(userId: string) {
   try {
-    const currentUser = await requireAdmin()
+    const { user: currentUser, role: currentUserRole, institutionId } = await requireAdminOrDirector()
 
     if (currentUser.id === userId) {
       return { error: 'No puedes eliminar tu propia cuenta' }
     }
 
     const adminClient = createAdminClient()
+
+    // Si es director, validar que el usuario a eliminar pertenezca a su institución
+    if (currentUserRole === 'director') {
+      const { data: targetProfile } = await adminClient
+        .from('profiles')
+        .select('institution_id')
+        .eq('id', userId)
+        .single()
+        
+      if (!targetProfile || targetProfile.institution_id !== institutionId) {
+        return { error: 'No tienes permiso para eliminar este usuario' }
+      }
+    }
 
     // Borrar de auth.users también borrará en cascada de public.profiles si las FK están configuradas correctamente.
     // Para asegurar, lo borramos de ambas.
@@ -116,6 +150,7 @@ export async function deleteUser(userId: string) {
     }
 
     revalidatePath('/admin/usuarios')
+    revalidatePath('/director/usuarios')
     return { success: true }
   } catch (error: any) {
     console.error('Exception in deleteUser:', error)
@@ -126,7 +161,7 @@ export async function deleteUser(userId: string) {
 // --- ACTUALIZAR USUARIO ---
 export async function updateUser(userId: string, formData: FormData) {
   try {
-    await requireAdmin()
+    const { role: currentUserRole, institutionId } = await requireAdminOrDirector()
 
     const name = formData.get('name') as string
     const email = formData.get('email') as string
@@ -138,7 +173,25 @@ export async function updateUser(userId: string, formData: FormData) {
       return { error: 'Nombre, email y rol son obligatorios' }
     }
 
+    // Restricciones para directores
+    if (currentUserRole === 'director' && (role === 'admin' || role === 'director')) {
+      return { error: 'Los directores no pueden asignar roles de administrador ni director' }
+    }
+
     const adminClient = createAdminClient()
+
+    // Si es director, validar que el usuario a editar pertenezca a su institución
+    if (currentUserRole === 'director') {
+      const { data: targetProfile } = await adminClient
+        .from('profiles')
+        .select('institution_id')
+        .eq('id', userId)
+        .single()
+        
+      if (!targetProfile || targetProfile.institution_id !== institutionId) {
+        return { error: 'No tienes permiso para editar este usuario' }
+      }
+    }
 
     // 1. Actualizar usuario en Auth
     const authUpdatePayload: any = {
@@ -164,14 +217,20 @@ export async function updateUser(userId: string, formData: FormData) {
     }
 
     // 2. Actualizar en profiles
+    const updatePayload: any = {
+      role: role,
+      full_name: name,
+      email: email,
+      parent_id: (role === 'estudiante' && parent_id) ? parent_id : null
+    }
+
+    if (currentUserRole === 'director') {
+      updatePayload.institution_id = institutionId
+    }
+
     const { error: profileError } = await adminClient
       .from('profiles')
-      .update({
-        role: role,
-        full_name: name,
-        email: email,
-        parent_id: (role === 'estudiante' && parent_id) ? parent_id : null
-      })
+      .update(updatePayload)
       .eq('id', userId)
 
     if (profileError) {
@@ -180,6 +239,7 @@ export async function updateUser(userId: string, formData: FormData) {
     }
 
     revalidatePath('/admin/usuarios')
+    revalidatePath('/director/usuarios')
     return { success: true }
   } catch (error: any) {
     console.error('Exception in updateUser:', error)

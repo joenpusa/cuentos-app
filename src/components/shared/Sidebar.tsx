@@ -102,6 +102,12 @@ export function Sidebar({ role, userEmail }: SidebarProps) {
       icon: <School size={20} />,
       roles: ['director'],
     },
+    {
+      label: 'Usuarios',
+      href: '/director/usuarios',
+      icon: <Users size={20} />,
+      roles: ['director'],
+    },
   ]
 
   const SidebarContent = () => (

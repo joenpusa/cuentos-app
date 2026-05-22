@@ -67,9 +67,17 @@ export default async function UsuariosAdminPage() {
     }
   }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
+  // 5. Obtener padres para el formulario
+  const { data: parentsData } = await adminClient
+    .from('profiles')
+    .select('id, full_name, email')
+    .eq('role', 'padre')
+
+  const parents = parentsData || []
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <UsersClient users={users} />
+      <UsersClient users={users} parents={parents} />
     </div>
   )
 }
