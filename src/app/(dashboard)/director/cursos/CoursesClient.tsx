@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import CourseForm from './CourseForm'
 
 interface CourseData {
@@ -63,6 +64,7 @@ export default function CoursesClient({ courses, institutionId, institutionName,
                   <th className="p-5 text-sm font-bold text-slate-500 uppercase">Nombre del Curso</th>
                   <th className="p-5 text-sm font-bold text-slate-500 uppercase">Profesor Líder</th>
                   <th className="p-5 text-sm font-bold text-slate-500 uppercase hidden md:table-cell">Registro</th>
+                  <th className="p-5 text-sm font-bold text-slate-500 uppercase text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -80,6 +82,14 @@ export default function CoursesClient({ courses, institutionId, institutionName,
                     </td>
                     <td className="p-5 text-slate-500 text-sm hidden md:table-cell">
                       {new Date(course.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </td>
+                    <td className="p-5 text-right">
+                      <Link
+                        href={`/director/cursos/${course.id}`}
+                        className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-3 py-1.5 rounded-lg font-medium transition-colors inline-block"
+                      >
+                        Ver detalles
+                      </Link>
                     </td>
                   </tr>
                 ))}

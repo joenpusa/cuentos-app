@@ -86,3 +86,109 @@ export async function createCourse(formData: FormData, institutionId: string) {
     return { error: error.message || 'Error desconocido al crear el curso' }
   }
 }
+
+// --- INSCRIBIR ESTUDIANTE A CURSO ---
+export async function enrollStudent(courseId: string, studentId: string) {
+  try {
+    const adminClient = createAdminClient()
+
+    // 1. Obtener información del curso para validar la institución
+    const { data: course } = await adminClient
+      .from('courses')
+      .select('institution_id')
+      .eq('id', courseId)
+      .single()
+
+    if (!course) {
+      return { error: 'El curso no existe' }
+    }
+
+    // 2. Validar que el usuario en sesión es director de la institución de este curso
+    await requireDirectorOfInstitution(course.institution_id)
+
+    // 3. Validar que el estudiante pertenece a la misma institución y no tiene curso asignado
+    const { data: student } = await adminClient
+      .from('profiles')
+      .select('institution_id, role, course_id')
+      .eq('id', studentId)
+      .single()
+
+    if (!student || student.role !== 'estudiante') {
+      return { error: 'El perfil seleccionado no es válido o no es un estudiante' }
+    }
+
+    if (student.institution_id !== course.institution_id) {
+      return { error: 'El estudiante no pertenece a la institución de este curso' }
+    }
+
+    if (student.course_id) {
+      return { error: 'El estudiante ya está inscrito en otro curso' }
+    }
+
+    // 4. Actualizar el curso del estudiante
+    const { error: updateError } = await adminClient
+      .from('profiles')
+      .update({ course_id: courseId })
+      .eq('id', studentId)
+
+    if (updateError) {
+      console.error('Error al inscribir estudiante:', updateError)
+      return { error: 'Error al inscribir el estudiante en la base de datos' }
+    }
+
+    revalidatePath(`/director/cursos/${courseId}`)
+    return { success: true }
+  } catch (error: any) {
+    console.error('Exception in enrollStudent:', error)
+    return { error: error.message || 'Error desconocido al inscribir estudiante' }
+  }
+}
+
+// --- DESVINCULAR ESTUDIANTE DE CURSO ---
+export async function removeStudentFromCourse(studentId: string, courseId: string) {
+  try {
+    const adminClient = createAdminClient()
+
+    // 1. Obtener información del curso para validar la institución
+    const { data: course } = await adminClient
+      .from('courses')
+      .select('institution_id')
+      .eq('id', courseId)
+      .single()
+
+    if (!course) {
+      return { error: 'El curso no existe' }
+    }
+
+    // 2. Validar que el usuario en sesión es director de la institución de este curso
+    await requireDirectorOfInstitution(course.institution_id)
+
+    // 3. Validar que el estudiante pertenece al curso actual
+    const { data: student } = await adminClient
+      .from('profiles')
+      .select('course_id')
+      .eq('id', studentId)
+      .single()
+
+    if (!student || student.course_id !== courseId) {
+      return { error: 'El estudiante no pertenece a este curso' }
+    }
+
+    // 4. Actualizar el curso del estudiante a NULL
+    const { error: updateError } = await adminClient
+      .from('profiles')
+      .update({ course_id: null })
+      .eq('id', studentId)
+
+    if (updateError) {
+      console.error('Error al desvincular estudiante:', updateError)
+      return { error: 'Error al desvincular el estudiante en la base de datos' }
+    }
+
+    revalidatePath(`/director/cursos/${courseId}`)
+    return { success: true }
+  } catch (error: any) {
+    console.error('Exception in removeStudentFromCourse:', error)
+    return { error: error.message || 'Error desconocido al desvincular estudiante' }
+  }
+}
