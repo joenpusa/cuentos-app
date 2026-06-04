@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import UserForm from '@/components/features/admin/UserForm'
+import BulkUploadForm from '@/components/features/admin/BulkUploadForm'
 import { deleteUser } from '@/app/(dashboard)/admin/usuarios/actions'
 
 interface UserData {
@@ -29,6 +30,7 @@ export default function UsersClient({ users, isDirector, parents }: UsersClientP
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<UserData | null>(null)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'list' | 'bulk'>('list')
 
   const handleSuccess = () => {
     setIsModalOpen(false)
@@ -95,17 +97,45 @@ export default function UsersClient({ users, isDirector, parents }: UsersClientP
         </button>
       </div>
 
-      {/* Tabla */}
-      <div className="bg-white rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden">
-        {users.length === 0 ? (
-          <div className="p-12 text-center">
-            <div className="text-5xl mb-4">👥</div>
-            <h3 className="text-xl font-bold text-slate-700">No hay usuarios</h3>
-            <p className="text-slate-500 mt-2">Comienza añadiendo un nuevo miembro a la familia.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+      {/* Tabs */}
+      <div className="flex space-x-1 border-b border-slate-200">
+        <button
+          onClick={() => setActiveTab('list')}
+          className={`py-2 px-4 border-b-2 font-medium text-sm transition-colors ${
+            activeTab === 'list'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+          }`}
+        >
+          Listado de Usuarios
+        </button>
+        <button
+          onClick={() => setActiveTab('bulk')}
+          className={`py-2 px-4 border-b-2 font-medium text-sm transition-colors ${
+            activeTab === 'bulk'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+          }`}
+        >
+          Carga Masiva
+        </button>
+      </div>
+
+      {activeTab === 'bulk' ? (
+        <BulkUploadForm />
+      ) : (
+        <>
+          {/* Tabla */}
+          <div className="bg-white rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden">
+            {users.length === 0 ? (
+              <div className="p-12 text-center">
+                <div className="text-5xl mb-4">👥</div>
+                <h3 className="text-xl font-bold text-slate-700">No hay usuarios</h3>
+                <p className="text-slate-500 mt-2">Comienza añadiendo un nuevo miembro a la familia.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100">
                   <th className="p-5 text-sm font-bold text-slate-500 uppercase">Nombre</th>
@@ -147,6 +177,8 @@ export default function UsersClient({ users, isDirector, parents }: UsersClientP
           </div>
         )}
       </div>
+      </>
+      )}
 
       {/* Modal */}
       {isModalOpen && (

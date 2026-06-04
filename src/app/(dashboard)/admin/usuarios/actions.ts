@@ -246,3 +246,112 @@ export async function updateUser(userId: string, formData: FormData) {
     return { error: error.message || 'Error desconocido' }
   }
 }
+
+// --- CARGA MASIVA DE USUARIOS ---
+export async function bulkUploadUsers(formData: FormData) {
+  try {
+    const { role: currentUserRole, institutionId } = await requireAdminOrDirector()
+    
+    const role = formData.get('role') as string
+    const file = formData.get('file') as File
+
+    if (!role || !file) {
+      return { error: 'El rol y el archivo son obligatorios' }
+    }
+
+    if (role !== 'estudiante' && role !== 'padre') {
+      return { error: 'El rol debe ser estudiante o padre' }
+    }
+
+    const adminClient = createAdminClient()
+    const textContent = await file.text()
+    
+    // Parseo manual básico de CSV (para casos simples donde nombre,email)
+    const lines = textContent.split('\n').map(line => line.trim()).filter(line => line.length > 0)
+    
+    // Remueve cabeceras si existen y son reconocibles
+    if (lines.length > 0 && lines[0].toLowerCase().includes('nombre') && lines[0].toLowerCase().includes('email')) {
+      lines.shift()
+    }
+
+    let successCount = 0
+    const createdUsers = []
+    const errors = []
+
+    for (const line of lines) {
+      // Separar por comas. Si hay más de dos columnas, ignoramos el resto por ahora.
+      const parts = line.split(',')
+      if (parts.length < 2) {
+        errors.push({ line, reason: 'Formato inválido (se esperaba nombre,email)' })
+        continue
+      }
+
+      const name = parts[0].trim()
+      const email = parts[1].trim()
+
+      if (!name || !email) {
+        errors.push({ line, reason: 'Falta nombre o email' })
+        continue
+      }
+
+      // Autogenerar PIN de 6 dígitos
+      const generatedPin = Math.floor(100000 + Math.random() * 900000).toString()
+
+      // 1. Intentar crear en Auth
+      const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
+        email,
+        password: generatedPin,
+        email_confirm: true,
+        user_metadata: {
+          full_name: name
+        }
+      })
+
+      if (authError) {
+        errors.push({ email, reason: authError.message })
+        continue
+      }
+
+      const userId = authData.user.id
+
+      // 2. Insertar en profiles
+      const { error: profileError } = await adminClient
+        .from('profiles')
+        .upsert({
+          id: userId,
+          role: role,
+          full_name: name,
+          email: email,
+          institution_id: currentUserRole === 'director' ? institutionId : null
+        })
+
+      if (profileError) {
+        await adminClient.auth.admin.deleteUser(userId)
+        errors.push({ email, reason: 'Error al registrar perfil de usuario en base de datos' })
+        continue
+      }
+
+      successCount++
+      createdUsers.push({
+        name,
+        email,
+        pin: generatedPin
+      })
+    }
+
+    revalidatePath('/admin/usuarios')
+    revalidatePath('/director/usuarios')
+    
+    return { 
+      success: true, 
+      report: {
+        successCount,
+        createdUsers,
+        errors
+      } 
+    }
+  } catch (error: any) {
+    console.error('Exception in bulkUploadUsers:', error)
+    return { error: error.message || 'Error desconocido durante la carga masiva' }
+  }
+}
