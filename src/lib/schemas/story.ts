@@ -1,7 +1,7 @@
 import * as z from 'zod'
 
 const opcionMultipleSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().optional(),
   tipo: z.literal('opcion_multiple'),
   pregunta: z.string().min(5, 'La pregunta debe tener al menos 5 caracteres'),
   opciones: z.object({
@@ -16,7 +16,7 @@ const opcionMultipleSchema = z.object({
 })
 
 const abiertaSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().optional(),
   tipo: z.literal('abierta'),
   pregunta: z.string().min(5, 'La pregunta debe tener al menos 5 caracteres'),
 })

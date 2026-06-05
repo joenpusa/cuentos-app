@@ -76,44 +76,54 @@ export function StoryForm({ initialData, storyId }: StoryFormProps = {}) {
     }
   }
 
+  const onError = (errors: any) => {
+    console.error('Validation errors:', errors)
+    toast.error('Por favor, revisa los errores en el formulario', { id: 'save-story-error' })
+  }
+
   const onSubmit = (values: StoryFormValues) => {
     startTransition(async () => {
-      const formData = new FormData()
-      formData.append('title', values.title)
-      
-      // Obtenemos el HTML de los valores ya validados
-      formData.append('content', values.content)
-      
-      // Añadimos las preguntas serializadas
-      formData.append('questions', JSON.stringify(values.questions))
-      
-      if (imageFile) {
-        formData.append('image', imageFile)
-      }
+      try {
+        const formData = new FormData()
+        formData.append('title', values.title)
+        
+        // Obtenemos el HTML de los valores ya validados
+        formData.append('content', values.content)
+        
+        // Añadimos las preguntas serializadas
+        formData.append('questions', JSON.stringify(values.questions))
+        
+        if (imageFile) {
+          formData.append('image', imageFile)
+        }
 
-      toast.loading(storyId ? 'Actualizando cuento...' : 'Guardando cuento y subiendo imagen...', { id: 'save-story' })
-      
-      let result;
-      if (storyId) {
-        formData.append('id', storyId)
-        result = await updateStory(formData)
-      } else {
-        result = await createStory(formData)
-      }
+        toast.loading(storyId ? 'Actualizando cuento...' : 'Guardando cuento y subiendo imagen...', { id: 'save-story' })
+        
+        let result;
+        if (storyId) {
+          formData.append('id', storyId)
+          result = await updateStory(formData)
+        } else {
+          result = await createStory(formData)
+        }
 
-      if (result?.error) {
-        toast.error(result.error, { id: 'save-story' })
-      } else if (result?.fields) {
-        toast.error('Revisa los campos del formulario', { id: 'save-story' })
-      } else {
-        toast.success(storyId ? '¡Cuento actualizado correctamente!' : '¡Cuento guardado correctamente!', { id: 'save-story' })
-        router.push('/admin')
+        if (result?.error) {
+          toast.error(result.error, { id: 'save-story' })
+        } else if (result?.fields) {
+          toast.error('Revisa los campos del formulario', { id: 'save-story' })
+        } else {
+          toast.success(storyId ? '¡Cuento actualizado correctamente!' : '¡Cuento guardado correctamente!', { id: 'save-story' })
+          router.push('/admin')
+        }
+      } catch (error) {
+        console.error('Submit error:', error)
+        toast.error('Ocurrió un error inesperado al guardar', { id: 'save-story' })
       }
     })
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto pb-20">
+    <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-8 max-w-4xl mx-auto pb-20">
       
       {/* 1. Información Básica */}
       <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
